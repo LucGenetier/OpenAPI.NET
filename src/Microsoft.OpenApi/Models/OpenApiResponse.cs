@@ -118,14 +118,7 @@ namespace Microsoft.OpenApi.Models
         /// <returns>OpenApiResponse</returns>
         public OpenApiResponse GetEffective(OpenApiDocument doc)
         {
-            if (Reference != null)
-            {
-                return doc.ResolveReferenceTo<OpenApiResponse>(Reference);
-            }
-            else
-            {
-                return this;
-            }
+            return Reference != null ? doc.ResolveReferenceTo<OpenApiResponse>(Reference) : this;
         }
 
         /// <summary>
@@ -140,7 +133,7 @@ namespace Microsoft.OpenApi.Models
         /// <summary>
         /// Serialize to OpenAPI V3 document without using reference.
         /// </summary>
-        public virtual void SerializeAsV3WithoutReference(IOpenApiWriter writer) 
+        public virtual void SerializeAsV3WithoutReference(IOpenApiWriter writer)
         {
             SerializeInternalWithoutReference(writer, OpenApiSpecVersion.OpenApi3_0,
                 (writer, element) => element.SerializeAsV3(writer));
@@ -226,6 +219,22 @@ namespace Microsoft.OpenApi.Models
                                 writer.WritePropertyName(mediaTypePair.Key);
                                 writer.WriteAny(mediaTypePair.Value.Example);
                             }
+                        }
+
+                        writer.WriteEndObject();
+                    }
+
+                    if (Content.Values.Any(m => m.Examples != null && m.Examples.Any()))
+                    {
+                        writer.WritePropertyName(OpenApiConstants.ExamplesExtension);
+                        writer.WriteStartObject();
+
+                        foreach (var example in Content
+                            .Where(mediaTypePair => mediaTypePair.Value.Examples != null && mediaTypePair.Value.Examples.Any())
+                            .SelectMany(mediaTypePair => mediaTypePair.Value.Examples))
+                        {
+                            writer.WritePropertyName(example.Key);
+                            writer.WriteV2Examples(writer, example.Value, OpenApiSpecVersion.OpenApi2_0);
                         }
 
                         writer.WriteEndObject();

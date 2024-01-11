@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
+using System.Linq;
 using Json.Schema;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
@@ -224,14 +224,7 @@ namespace Microsoft.OpenApi.Models
         /// <returns>OpenApiParameter</returns>
         public OpenApiParameter GetEffective(OpenApiDocument doc)
         {
-            if (Reference != null)
-            {
-                return doc.ResolveReferenceTo<OpenApiParameter>(Reference);
-            }
-            else
-            {
-                return this;
-            }
+            return Reference != null ? doc.ResolveReferenceTo<OpenApiParameter>(Reference) : this;
         }
 
         /// <summary>
@@ -431,6 +424,20 @@ namespace Microsoft.OpenApi.Models
                         writer.WriteProperty("collectionFormat", "ssv");
                     }
                 }
+            }
+
+            //examples
+            if (Examples != null && Examples.Any())
+            {
+                writer.WritePropertyName(OpenApiConstants.ExamplesExtension);
+                writer.WriteStartObject();
+
+                foreach (var example in Examples)
+                {
+                    writer.WritePropertyName(example.Key);
+                    writer.WriteV2Examples(writer, example.Value, OpenApiSpecVersion.OpenApi2_0);
+                }
+                writer.WriteEndObject();
             }
 
             // extensions
